@@ -8,7 +8,7 @@ TCP_PORT = int(sys.argv[1])
 BUFFER_SIZE = 1024
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind((TCP_IP, TCP_PORT))
+s.bind(('', TCP_PORT))
 s.listen(0)
 
 
@@ -31,6 +31,7 @@ def read_file(file_name):
 
 
 def decipher_message(message):
+    print("here we are")
     lines = message.split('\n')
     get_line = None
     connection_line = None
@@ -39,30 +40,31 @@ def decipher_message(message):
             get_line = line.split(' ')[1]  # Extract text from GET till HTTP
         elif line.startswith('Connection'):
             connection_line = line.split(': ')[1]  # Extract text from Connection till the end
+    print("here we leave")
     return get_line, connection_line
 
 
 def read_message(connection):
+    print("problem here")
     data = ''
     terminate = 0
     connection.settimeout(1)
     while True:
         try:
-            data += connection.recv(BUFFER_SIZE)
+            data += (connection.recv(BUFFER_SIZE)).decode()
             print("received:", data)
             if not data:
-                close(connection)
+                connection.close()
                 return None
             if data.__contains__('\r\n'):
                 terminate += 1
             if terminate == 2:
                 return data
         except socket.timeout:
-            close(connection)
+            connection.close()
             return None
 
-
-def return_message(connection, file):
+def return_message(connection, connectionType, file):
     http_response = 'HTTP/1.1'
     conn_response = 'Connection: '
     length_response = 'Content-Length: '
@@ -72,19 +74,25 @@ def return_message(connection, file):
         http_response += ' 301 Found\n'
         conn_response += 'close\n'
         location_response += "/result.html\n"
-        connection.send(http_response + conn_response + location_response + '\n')
+        response = http_response + conn_response + location_response + '\n'
+        connection.send(response.encode())
+        return  # Return early for this condition
+
     if search_file(file):
+        print("file found")
         http_response += ' 200 OK\n'
-        conn_response += connection + '\n'
-        # TODO: check if hello world is 11 as should be
-        length_response += str(len(read_file(file))) + '\n\n'
-        connection.send(http_response + conn_response + length_response + '\n' + read_file(file) + '\n')
+        conn_response += connectionType + '\n'
+        file_content = read_file(file)
+        length_response += str(len(file_content)) + '\n\n'
+        response = http_response + conn_response + length_response + file_content + '\n'
+        connection.send(response.encode())
+        print("res sent")
     else:
         http_response += ' 404 Not Found\n'
         conn_response += 'close\n'
-        connection.send(http_response + conn_response + '\n')
-        return
-    return
+        response = http_response + conn_response + '\n'
+        connection.send(response.encode())
+
 
 
 while True:
@@ -96,14 +104,15 @@ while True:
             break
 
         # print the msg from the client to the screen
-        print(message_from_client)
+        # print(message_from_client)
 
-        file, connection = decipher_message(message_from_client)
+        file, connectionType = decipher_message(message_from_client)
         if file == "/":
             file = "index.html"
         elif file == "/redirect":
             file = "result.html"
-        return_message(conn, file)
-        if connection == 'close':
+        print("file:", file)
+        return_message(conn,connectionType,file)
+        if connectionType == 'close':
             break
     conn.close()
