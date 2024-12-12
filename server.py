@@ -3,9 +3,7 @@ from os import close
 
 import socket, sys
 
-# TCP_IP = '127.0.0.1'
-#TCP_PORT = int(sys.argv[1])
-TCP_PORT = 12346
+TCP_PORT = int(sys.argv[1])
 BUFFER_SIZE = 1024
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -13,17 +11,18 @@ s.bind(('', TCP_PORT))
 s.listen(0)
 
 
-# a function to search for the file
-# if the file exists, ret true, else ret false
+# A function to search if the file exists
 def search_file(file_name):
-    file_name = file_name[1:]
+    if file_name[0] == '/':
+        file_name = file_name[1:]
     file_path = os.path.join('files', file_name)
     return os.path.exists(file_path)
 
 
 def read_file(file_name):
     # Construct the full path to the file
-    file_name = file_name[1:]
+    if file_name[0] == '/':
+        file_name = file_name[1:]
     file_path = os.path.join('files', file_name)
     if file_name.endswith('.jpg') or file_name.endswith('.ico'):
         with open(file_path, 'rb') as f:

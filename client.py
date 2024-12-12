@@ -16,7 +16,7 @@ def read_message(s):
         data = s.recv(BUFFER_SIZE)
         if not data:
             break
-        msg += data.decode()
+        msg += data.decode('utf-8')
     return msg
 
 
@@ -44,10 +44,14 @@ def message_to_file(message, file_name):
 while True:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((TCP_IP, TCP_PORT))
+    print("connected to:", TCP_IP, ":", TCP_PORT)
     while True:
         # get path from the CLI
         path = input()
         # something going to break here
+        print("the path is:", path)
+        print("the msg is: ", format_msg(path))
+        print("the encode msd is: ", format_msg(path).encode())
         s.send(format_msg(path).encode())
         print("passed the sending")
         message = read_message(s)
