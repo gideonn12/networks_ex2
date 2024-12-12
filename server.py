@@ -1,12 +1,12 @@
 import socket,sys
 
-TCP_IP = '0.0.0.0'
+TCP_IP = '127.0.0.1'
 TCP_PORT = int(sys.argv[1])
 BUFFER_SIZE = 1024
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((TCP_IP, TCP_PORT))
-s.listen(1)
+s.listen(0)
 
 while True:
 	conn, addr = s.accept()
@@ -14,6 +14,5 @@ while True:
 	while True:
 		data = conn.recv(BUFFER_SIZE)
 		if not data: break
-		print("received:", data)
-		conn.send(data.upper()*1000) 
+		print("received:", data) 
 	conn.close()
