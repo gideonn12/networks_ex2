@@ -3,8 +3,9 @@ from os import close
 
 import socket, sys
 
-TCP_IP = '127.0.0.1'
+#TCP_IP = '127.0.0.1'
 TCP_PORT = int(sys.argv[1])
+TCP_PORT = 12345
 BUFFER_SIZE = 1024
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -31,7 +32,6 @@ def read_file(file_name):
 
 
 def decipher_message(message):
-    print("here we are")
     lines = message.split('\n')
     get_line = None
     connection_line = None
@@ -40,12 +40,10 @@ def decipher_message(message):
             get_line = line.split(' ')[1]  # Extract text from GET till HTTP
         elif line.startswith('Connection'):
             connection_line = line.split(': ')[1]  # Extract text from Connection till the end
-    print("here we leave")
     return get_line, connection_line
 
 
 def read_message(connection):
-    print("problem here")
     data = ''
     terminate = 0
     connection.settimeout(1)
@@ -56,7 +54,9 @@ def read_message(connection):
             if not data:
                 connection.close()
                 return None
-            if data.__contains__('\r\n'):
+            if data.__contains__('\r\n\r\n'):
+                terminate += 2
+            elif data.__contains__('\r\n'):
                 terminate += 1
             if terminate == 2:
                 return data
