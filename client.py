@@ -1,4 +1,5 @@
-import socket, sys
+import socket
+import sys
 
 TCP_IP = sys.argv[1]
 TCP_PORT = int(sys.argv[2])
@@ -6,7 +7,7 @@ BUFFER_SIZE = 1024
 
 
 def format_msg(path):
-    return f"GET" + {path} + "HTTP/1.1\nConnection: keep-alive\r\n\r\n"
+    return "GET " + path + " HTTP/1.1\nConnection: keep-alive\r\n\r\n"
 
 
 def read_message(s):
@@ -21,6 +22,9 @@ def read_message(s):
 
 def message_to_file(message, file_name):
     lines = message.splitlines()
+    # print the first line
+    # print(lines[0])
+    print(lines)
     if "200 OK" in lines[0]:
         empty_line_index = lines.index("")
         data = "\n".join(lines[empty_line_index + 1:])
@@ -30,7 +34,7 @@ def message_to_file(message, file_name):
                 f.write(data)
         except UnicodeEncodeError:
             with open(file_name, "wb") as f:
-                f.write(message.encode('utf-8'))
+                f.write(data.encode('utf-8'))
     return
 
 
@@ -42,11 +46,13 @@ while True:
     s.connect((TCP_IP, TCP_PORT))
     while True:
         # get path from the CLI
-        path = input("\n")
+        path = input()
         # something going to break here
         s.send(format_msg(path).encode())
-        read_message(s)
-
+        print("passed the sending")
+        message = read_message(s)
+        file_name = path.split("/")[-1] or "index.html"
+        message_to_file(message, file_name)
         break
     break
 s.close()

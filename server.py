@@ -103,10 +103,7 @@ while True:
         message_from_client = read_message(conn)
         if not message_from_client:
             break
-
-        # print the msg from the client to the screen
-        # print(message_from_client)
-
+        print(message_from_client)
         file, connectionType = decipher_message(message_from_client)
         if file == "/":
             file = "/index.html"
