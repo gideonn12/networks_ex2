@@ -47,7 +47,7 @@ def decipher_message(message):
 def read_message(connection):
     data = ''
     terminate = 0
-    connection.settimeout(1)
+    connection.settimeout(10)
     while True:
         try:
             data += (connection.recv(BUFFER_SIZE)).decode()
@@ -84,8 +84,12 @@ def return_message(connection, connectionType, file):
         conn_response += connectionType + '\n'
         file_content = read_file(file)
         length_response += str(len(file_content)) + '\n\n'
-        response = http_response + conn_response + length_response + file_content + '\n'
-        connection.send(response.encode())
+        response = http_response + conn_response + length_response
+        if isinstance(file_content, bytes):
+            connection.send(response.encode() + file_content + b'\n')
+        else:
+            response += file_content + '\n'
+            connection.send(response.encode())
         return True
     else:
         http_response += ' 404 Not Found\n'
