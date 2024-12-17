@@ -14,9 +14,7 @@ def read_message(s):
     msg = b''  # Use bytes instead of string
     headers = b''
     while b'\n\n' not in headers:
-        print("headers: ", headers)
         headers += s.recv(BUFFER_SIZE)
-        print("headers: ", headers)
     
     header_data, _, body = headers.partition(b'\n\n')
     msg += body
@@ -34,19 +32,39 @@ def read_message(s):
     return header_data + b'\r\n\r\n' + msg
 
 
-def message_to_file(message, file_name):
+def message_to_file(message, file_name, s):
     try:
         headers, data = message.split(b'\r\n\r\n', 1)
         headers_decoded = headers.decode('utf-8', errors='ignore')
-        print(headers_decoded)
         if "200 OK" in headers_decoded:
-            with open(file_name, "wb") as f:
-                f.write(data)
+            handle_200(data, file_name)
+        if "301 Moved Permanently" in headers_decoded:
+            handle_301(data, file_name, headers_decoded, s)
+        if "404 Not Found" in headers_decoded:
+            handle_404(data, file_name)
     except UnicodeDecodeError as e:
         print(f"Failed to decode headers: {e}")
     except ValueError as e:
         print(f"Failed to split message: {e}")
 
+def handle_200(msg, file_name):
+    with open(file_name, "wb") as f:
+        f.write(msg)
+
+def handle_301(msg, file_name, headers, s):
+    # we need now to send a request of the file that we got back, so do messege to file again
+    # we need to get the location from the headers
+    location = headers.split("Location: ")[1].split("\r\n")[0]
+    # now we handle the sending of the new request
+    s.send(format_msg(location).encode())
+    message = read_message(s)
+    file_name = location.split("/")[-1] or "index.html"
+    message_to_file(message, file_name, s)
+
+
+
+def handle_404(msg, file_name):
+    print("404 not found")
 
 # if the response
 
@@ -54,19 +72,14 @@ def message_to_file(message, file_name):
 while True:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((TCP_IP, TCP_PORT))
-    print("connected to:", TCP_IP, ":", TCP_PORT)
     while True:
         # get path from the CLI
         path = input()
         # something going to break here
-        print("the path is:", path)
-        print("the msg is: ", format_msg(path))
-        print("the encode msg is: ", format_msg(path).encode())
         s.send(format_msg(path).encode())
-        print("passed the sending")
         message = read_message(s)
         file_name = path.split("/")[-1] or "index.html"
-        message_to_file(message, file_name)
+        message_to_file(message, file_name, s)
         break
     break
 s.close()
