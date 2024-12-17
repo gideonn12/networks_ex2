@@ -11,31 +11,41 @@ def format_msg(path):
 
 
 def read_message(s):
-    msg = ''
-    while True:
-        data = s.recv(BUFFER_SIZE)
-        if not data:
+    msg = b''  # Use bytes instead of string
+    headers = b''
+    while b'\n\n' not in headers:
+        print("headers: ", headers)
+        headers += s.recv(BUFFER_SIZE)
+        print("headers: ", headers)
+    
+    header_data, _, body = headers.partition(b'\n\n')
+    msg += body
+
+    header_lines = header_data.decode('utf-8', errors='replace').splitlines()
+    content_length = 0
+    for line in header_lines:
+        if line.lower().startswith('content-length:'):
+            content_length = int(line.split(':')[1].strip())
             break
-        msg += data.decode('utf-8')
-    return msg
+
+    while len(msg) < content_length:
+        msg += s.recv(BUFFER_SIZE)
+
+    return header_data + b'\r\n\r\n' + msg
 
 
 def message_to_file(message, file_name):
-    lines = message.splitlines()
-    # print the first line
-    # print(lines[0])
-    print(lines)
-    if "200 OK" in lines[0]:
-        empty_line_index = lines.index("")
-        data = "\n".join(lines[empty_line_index + 1:])
-        try:
-            data.encode('utf-8')
-            with open(file_name, "w") as f:
-                f.write(data)
-        except UnicodeEncodeError:
+    try:
+        headers, data = message.split(b'\r\n\r\n', 1)
+        headers_decoded = headers.decode('utf-8', errors='ignore')
+        print(headers_decoded)
+        if "200 OK" in headers_decoded:
             with open(file_name, "wb") as f:
-                f.write(data.encode('utf-8'))
-    return
+                f.write(data)
+    except UnicodeDecodeError as e:
+        print(f"Failed to decode headers: {e}")
+    except ValueError as e:
+        print(f"Failed to split message: {e}")
 
 
 # if the response
@@ -51,7 +61,7 @@ while True:
         # something going to break here
         print("the path is:", path)
         print("the msg is: ", format_msg(path))
-        print("the encode msd is: ", format_msg(path).encode())
+        print("the encode msg is: ", format_msg(path).encode())
         s.send(format_msg(path).encode())
         print("passed the sending")
         message = read_message(s)
