@@ -47,12 +47,11 @@ def decipher_message(message):
 def read_message(connection):
     data = ''
     terminate = 0
-    connection.settimeout(10)
+    connection.settimeout(250)
     while True:
         try:
             data += (connection.recv(BUFFER_SIZE)).decode()
             if not data:
-                connection.close()
                 return None
             if data.__contains__('\r\n\r\n'):
                 terminate += 2
@@ -61,7 +60,6 @@ def read_message(connection):
             if terminate == 2:
                 return data
         except socket.timeout:
-            connection.close()
             return None
 
 
@@ -72,7 +70,7 @@ def return_message(connection, connectionType, file):
     location_response = 'Location: '
 
     if file == "/redirect":
-        http_response += ' 301 Found\n'
+        http_response += ' 301 Moved Permanently\n'
         conn_response += 'close\n'
         location_response += "/result.html\n"
         response = http_response + conn_response + location_response + '\n'
