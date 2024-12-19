@@ -40,7 +40,7 @@ def decipher_message(message):
 def read_message(connection):
     data = ''
     terminate = 0
-    connection.settimeout(5)
+    connection.settimeout(1)
     while True:
         try:
             chunk = connection.recv(BUFFER_SIZE).decode()
@@ -107,7 +107,6 @@ def return_message(connection, connection_type, file):
 # Main loop to handle client connections
 while True:
     conn, addr = s.accept()
-    print(f"Connection from {addr}")
     while True:
         message_from_client = read_message(conn)
         if not message_from_client:
